@@ -21,6 +21,32 @@ SUGGESTIONS = [
     "My name is Alex",
 ]
 
+
+# ---------- Themes ----------
+THEMES = {
+    "Sunset": dict(bg="linear-gradient(135deg,#1a0b2e 0%,#3b1248 45%,#4a1c2a 100%)",
+                   a1="#ff7a59", a2="#ffb347", a3="#ff4d8d", inner="#2a1038",
+                   text="#fff4ee", muted="rgba(255,244,238,0.65)",
+                   glass="rgba(255,255,255,0.08)", strong="rgba(255,255,255,0.15)", border="rgba(255,255,255,0.2)"),
+    "Aurora": dict(bg="linear-gradient(135deg,#0b1020 0%,#151038 45%,#0a1a2e 100%)",
+                   a1="#7c5cff", a2="#22d3ee", a3="#f472b6", inner="#12163a",
+                   text="#eef2ff", muted="rgba(238,242,255,0.62)",
+                   glass="rgba(255,255,255,0.08)", strong="rgba(255,255,255,0.14)", border="rgba(255,255,255,0.18)"),
+    "Forest": dict(bg="linear-gradient(135deg,#04130f 0%,#0b2a22 50%,#07201f 100%)",
+                   a1="#10b981", a2="#a3e635", a3="#2dd4bf", inner="#082019",
+                   text="#ecfdf5", muted="rgba(236,253,245,0.62)",
+                   glass="rgba(255,255,255,0.07)", strong="rgba(255,255,255,0.14)", border="rgba(255,255,255,0.18)"),
+    "Light": dict(bg="linear-gradient(135deg,#eef2ff 0%,#fde7f3 50%,#e0f7fa 100%)",
+                  a1="#7c5cff", a2="#06b6d4", a3="#ec4899", inner="#ffffff",
+                  text="#1e1b4b", muted="rgba(30,27,75,0.62)",
+                  glass="rgba(255,255,255,0.45)", strong="rgba(255,255,255,0.72)", border="rgba(255,255,255,0.85)"),
+}
+
+with st.sidebar:
+    st.markdown("### 🫧 Control panel")
+    theme_name = st.selectbox("Theme", list(THEMES), index=0, key="theme")
+T = THEMES[theme_name]
+
 # ---------- Styling ----------
 CSS = """
 <style>
@@ -42,7 +68,7 @@ html, body, [class*="css"], .stApp { font-family: 'Sora', sans-serif !important;
 
 /* Animated aurora background */
 .stApp{
-  background: linear-gradient(135deg,#0b1020 0%,#151038 45%,#0a1a2e 100%);
+  background: var(--bg);
   background-attachment: fixed;
 }
 .stApp::before, .stApp::after, .orb{
@@ -75,7 +101,7 @@ html, body, [class*="css"], .stApp { font-family: 'Sora', sans-serif !important;
   background: conic-gradient(from 0deg, var(--a1), var(--a2), var(--a3), var(--a1));
   animation: spin 7s linear infinite, pulse 3s ease-in-out infinite;
   box-shadow: 0 0 24px rgba(124,92,255,.7); position:relative; }
-.logo::after{ content:""; position:absolute; inset:7px; border-radius:50%; background:#12163a; }
+.logo::after{ content:""; position:absolute; inset:7px; border-radius:50%; background:var(--inner); }
 @keyframes spin{ to{ transform: rotate(360deg);} }
 @keyframes pulse{ 50%{ box-shadow: 0 0 40px rgba(34,211,238,.85);} }
 
@@ -119,7 +145,7 @@ html, body, [class*="css"], .stApp { font-family: 'Sora', sans-serif !important;
 /* Welcome */
 .hero{ text-align:center; padding: 38px 20px 18px; animation: dropIn .9s .15s both; }
 .hero h1{ font-size:2rem; font-weight:600; margin:0 0 8px;
-  background: linear-gradient(90deg,#fff,#a5b4fc,#67e8f9,#fff); background-size:200% auto;
+  background: linear-gradient(90deg,var(--text),var(--a1),var(--a2),var(--text)); background-size:200% auto;
   -webkit-background-clip:text; background-clip:text; color:transparent; animation: shine 6s linear infinite; }
 @keyframes shine{ to{ background-position: 200% center; } }
 .hero p{ color:var(--muted); font-size:.92rem; margin-bottom: 4px; }
@@ -131,7 +157,7 @@ html, body, [class*="css"], .stApp { font-family: 'Sora', sans-serif !important;
   backdrop-filter: blur(14px); transition: all .25s ease; box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
 }
 .stButton > button:hover{ transform: translateY(-3px) scale(1.03); border-color: var(--a2);
-  background: var(--glass-strong); box-shadow: 0 10px 26px rgba(34,211,238,.25); color:#fff; }
+  background: var(--glass-strong); box-shadow: 0 10px 26px rgba(34,211,238,.25); color:var(--text); }
 .stButton > button:active{ transform: scale(.97); }
 
 /* Chat input */
@@ -166,6 +192,11 @@ section[data-testid="stSidebar"] *{ color: var(--text); }
 <div class="orb"></div>
 """
 st.markdown(CSS, unsafe_allow_html=True)
+st.markdown(f"""<style>:root{{
+  --bg:{T['bg']}; --a1:{T['a1']}; --a2:{T['a2']}; --a3:{T['a3']}; --inner:{T['inner']};
+  --text:{T['text']}; --muted:{T['muted']}; --glass:{T['glass']}; --glass-strong:{T['strong']}; --border:{T['border']};
+}}
+.stApp{{ transition: background .6s ease; }}</style>""", unsafe_allow_html=True)
 
 # ---------- State ----------
 if "messages" not in st.session_state:
@@ -191,7 +222,6 @@ THINKING = ('<div class="row bot fresh"><div class="avatar">✨</div><div class=
 
 # ---------- Sidebar ----------
 with st.sidebar:
-    st.markdown("### 🫧 Control panel")
     n_user = sum(1 for m in st.session_state.messages if m["role"] == "user")
     st.markdown(f'<div class="side-card"><h4>Questions asked</h4><div class="stat">{n_user}</div></div>',
                 unsafe_allow_html=True)
