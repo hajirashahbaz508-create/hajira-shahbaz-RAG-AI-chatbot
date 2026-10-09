@@ -15,6 +15,21 @@ except FileNotFoundError:
 except Exception as e:  # noqa: BLE001
     BACKEND_OK, BACKEND_ERR = False, str(e)
 
+def ollama_status():
+    """Return (ok, message) by asking the local Ollama server which models it has."""
+    try:
+        import ollama
+        names = [m.get("model") or m.get("name") or "" for m in ollama.list().get("models", [])]
+        missing = [m for m in ("nomic-embed-text", "llama3.2") if not any(m in n for n in names)]
+        if missing:
+            return False, "Missing model(s): " + ", ".join(missing) + ". Run `ollama pull <name>`."
+        return True, ""
+    except Exception:  # noqa: BLE001
+        return False, "Ollama is not running. Open the Ollama app, or run `ollama serve` in a terminal."
+
+
+OLLAMA_OK, OLLAMA_MSG = ollama_status()
+
 SUGGESTIONS = [
     "What is a list in Python?",
     "Explain for loops",
@@ -234,8 +249,9 @@ with st.sidebar:
     st.button("🗑️  Clear conversation", key="clear_side", on_click=clear_chat)
 
 # ---------- Header ----------
-dot = "dot" if BACKEND_OK else "dot off"
-label = "Offline · ready" if BACKEND_OK else "Backend error"
+ready = BACKEND_OK and OLLAMA_OK
+dot = "dot" if ready else "dot off"
+label = "Offline · ready" if ready else ("Backend error" if not BACKEND_OK else "Ollama not running")
 st.markdown(
     f'''<div class="glass topbar"><div class="logo"></div>
     <div><div class="title">Python Notes AI</div><div class="subtitle">Ask anything from your PDF notes</div></div>
@@ -254,6 +270,9 @@ tcols[-1].button("🗑️ Clear", key="clear_main", on_click=clear_chat)
 if not BACKEND_OK:
     st.error(BACKEND_ERR)
     st.stop()
+
+if not OLLAMA_OK:
+    st.warning(OLLAMA_MSG + " Then send your question again.")
 
 # ---------- Welcome + chips ----------
 if not st.session_state.messages:
@@ -285,7 +304,7 @@ if question:
     try:
         reply = chatbot.ask_chatbot(question)
     except Exception as e:  # noqa: BLE001
-        reply = f"Something went wrong: {e}. Check that Ollama is running."
+        reply = OLLAMA_MSG if not OLLAMA_OK else f"Something went wrong: {e}"
 
     # typewriter effect
     shown = []
