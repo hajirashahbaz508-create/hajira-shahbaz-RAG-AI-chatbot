@@ -42,9 +42,10 @@ THEMES = {
                   glass="rgba(255,255,255,0.45)", strong="rgba(255,255,255,0.72)", border="rgba(255,255,255,0.85)"),
 }
 
-with st.sidebar:
-    st.markdown("### 🫧 Control panel")
-    theme_name = st.selectbox("Theme", list(THEMES), index=0, key="theme")
+ICONS = {"Sunset": "🌅", "Aurora": "🌌", "Forest": "🌲", "Light": "☀️"}
+theme_name = st.query_params.get("theme", "Sunset")
+if theme_name not in THEMES:
+    theme_name = "Sunset"
 T = THEMES[theme_name]
 
 # ---------- Styling ----------
@@ -160,6 +161,10 @@ html, body, [class*="css"], .stApp { font-family: 'Sora', sans-serif !important;
   background: var(--glass-strong); box-shadow: 0 10px 26px rgba(34,211,238,.25); color:var(--text); }
 .stButton > button:active{ transform: scale(.97); }
 
+.stButton > button[kind="primary"], .stButton > button[data-testid="stBaseButton-primary"]{
+  background: linear-gradient(135deg,var(--a1),var(--a2)); border-color: transparent; color:#fff; font-weight:600;
+  box-shadow: 0 6px 22px rgba(0,0,0,.3); }
+
 /* Chat input */
 [data-testid="stBottom"], [data-testid="stBottom"] > div{ background: transparent !important; }
 [data-testid="stChatInput"]{
@@ -222,6 +227,7 @@ THINKING = ('<div class="row bot fresh"><div class="avatar">✨</div><div class=
 
 # ---------- Sidebar ----------
 with st.sidebar:
+    st.markdown("### 🫧 Control panel")
     n_user = sum(1 for m in st.session_state.messages if m["role"] == "user")
     st.markdown(f'<div class="side-card"><h4>Questions asked</h4><div class="stat">{n_user}</div></div>',
                 unsafe_allow_html=True)
@@ -246,6 +252,13 @@ st.markdown(
     <div><div class="title">Python Notes AI</div><div class="subtitle">Ask anything from your PDF notes</div></div>
     <div class="status"><span class="{dot}"></span>{label}</div></div>''',
     unsafe_allow_html=True)
+
+# ---------- Theme switcher (always visible, works on every screen size) ----------
+tcols = st.columns(len(THEMES))
+for col, name in zip(tcols, THEMES):
+    if col.button(f"{ICONS[name]} {name}", key=f"theme_{name}", type="primary" if name == theme_name else "secondary"):
+        st.query_params["theme"] = name
+        st.rerun()
 
 if not BACKEND_OK:
     st.error(BACKEND_ERR)
