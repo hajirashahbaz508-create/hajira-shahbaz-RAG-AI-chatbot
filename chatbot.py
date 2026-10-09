@@ -15,11 +15,16 @@ with open("retrieval_data.pkl", "rb") as f:
 memory = {}
 
 
+def reset_memory():
+    """Forget everything the user told the bot (used by the UI's Clear button)."""
+    memory.clear()
+
+
 def retrieve(question, top_k=2):
     """Embed question and find top matching chunks from PDF."""
     response = ollama.embeddings(model=EMBEDDING_MODEL, prompt=question)
     query_vector = np.array(response["embedding"]).reshape(1, -1)
-    
+
     scores = cosine_similarity(query_vector, vectors)[0]
     top_indices = np.argsort(scores)[-top_k:][::-1]
     return [(chunks[i], scores[i]) for i in top_indices]
@@ -28,29 +33,28 @@ def retrieve(question, top_k=2):
 def ask_chatbot(question):
     q_clean = question.lower().strip()
 
-    # 1. QUESTION HANDLER: Check if user is sharing their name
+    # 1. Check if user is sharing their name
     if q_clean.startswith("my name is "):
         name = question[11:].strip()
         memory["name"] = name
         return f"Nice to meet you, {name}! I'll remember your name during this conversation."
 
-    # 2. QUESTION HANDLER: Check if user is asking for their name
+    # 2. Check if user is asking for their name
     if "what is my name" in q_clean:
         if "name" in memory:
             return f"Your name is {memory['name']}."
         return FALLBACK
 
-    # 3. RETRIEVAL & SCORE CHECK
+    # 3. Retrieval & score check
     results = retrieve(question)
     top_chunk, top_score = results[0]
 
-    # QUESTION HANDLER: Strict cutoff for irrelevant/out-of-bounds questions (tea, weather, capitals, etc.)
+    # Strict cutoff for irrelevant / out-of-bounds questions
     if top_score < 0.40:
         return FALLBACK
 
     context = "\n\n".join([chunk for chunk, score in results if score >= 0.35])
 
-    # Direct answer prompt (No meta phrases like 'according to context')
     prompt = f"""Context:
 {context}
 
@@ -80,18 +84,22 @@ Answer:"""
     return answer
 
 
-# Main Chat Loop
-print("--- Python Offline RAG Chatbot Active ---")
-print("Type 'exit' to quit.\n")
+def main():
+    """Terminal chat loop (only runs with `python chatbot.py`)."""
+    print("--- Python Offline RAG Chatbot Active ---")
+    print("Type 'exit' to quit.\n")
 
-while True:
-    user_input = input("You: ").strip()
+    while True:
+        user_input = input("You: ").strip()
 
-    if not user_input:
-        continue
+        if not user_input:
+            continue
 
-    if user_input.lower() == "exit":
-        break
+        if user_input.lower() == "exit":
+            break
 
-    bot_reply = ask_chatbot(user_input)
-    print(f"\nBot: {bot_reply}\n")
+        print(f"\nBot: {ask_chatbot(user_input)}\n")
+
+
+if __name__ == "__main__":
+    main()
