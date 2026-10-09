@@ -3,7 +3,7 @@ import time
 
 import streamlit as st
 
-st.set_page_config(page_title="Python Notes AI", page_icon="🫧", layout="wide")
+st.set_page_config(page_title="Python Notes AI", page_icon="🫧", layout="wide", initial_sidebar_state="expanded")
 
 # ---------- Backend ----------
 try:
@@ -65,7 +65,26 @@ CSS = """
 }
 
 html, body, [class*="css"], .stApp { font-family: 'Sora', sans-serif !important; color: var(--text); }
-#MainMenu, footer, header[data-testid="stHeader"] { display:none !important; }
+#MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"]{ display:none !important; }
+header[data-testid="stHeader"]{ background: transparent !important; }
+/* sidebar open / close buttons stay visible and match the theme */
+[data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"], [data-testid="stSidebarCollapseButton"] button{
+  z-index: 1000002 !important; display:flex !important; visibility:visible !important; opacity:1 !important; }
+[data-testid="stSidebarCollapsedControl"] button, [data-testid="stExpandSidebarButton"], [data-testid="stSidebarCollapseButton"] button{
+  background: var(--glass) !important; border:1px solid var(--border) !important; border-radius:14px !important;
+  backdrop-filter: blur(16px); color: var(--text) !important; transition: transform .25s, box-shadow .25s; }
+[data-testid="stSidebarCollapsedControl"] button:hover, [data-testid="stExpandSidebarButton"]:hover, [data-testid="stSidebarCollapseButton"] button:hover{
+  transform: scale(1.1); box-shadow: 0 0 20px var(--a2); }
+[data-testid="stSidebarCollapsedControl"] svg, [data-testid="stExpandSidebarButton"] svg, [data-testid="stSidebarCollapseButton"] svg{ color: var(--text) !important; fill: var(--text) !important; }
+
+/* theme picker as glass pills */
+div[role="radiogroup"]{ gap:8px; flex-wrap:wrap; }
+div[role="radiogroup"] > label{ background: var(--glass); border:1px solid var(--border); border-radius:999px; padding:6px 14px;
+  backdrop-filter: blur(14px); transition: all .25s ease; cursor:pointer; }
+div[role="radiogroup"] > label:hover{ transform: translateY(-2px); border-color: var(--a2); }
+div[role="radiogroup"] > label:has(input:checked){ background: linear-gradient(135deg, var(--a1), var(--a2)); border-color: transparent; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+div[role="radiogroup"] > label > div:first-child{ display:none; }
+div[role="radiogroup"] label p{ color: var(--text) !important; font-size:.8rem; margin:0; }
 
 /* Animated aurora background */
 .stApp{
@@ -263,6 +282,18 @@ for col, name in zip(tcols, THEMES):
 if not BACKEND_OK:
     st.error(BACKEND_ERR)
     st.stop()
+
+# ---------- Controls (theme + clear) ----------
+def clear_chat():
+    st.session_state.messages = []
+    chatbot.reset_memory()
+
+
+c1, c2 = st.columns([4, 1.4])
+with c1:
+    st.radio("Theme", list(THEMES), key="theme", horizontal=True, label_visibility="collapsed")
+with c2:
+    st.button("🗑️ Clear", key="clear_main", on_click=clear_chat)
 
 # ---------- Welcome + chips ----------
 if not st.session_state.messages:
